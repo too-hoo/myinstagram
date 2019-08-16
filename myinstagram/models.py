@@ -60,7 +60,8 @@ class User(db.Model):
     def __init__(self, username, password):
         self.username = username
         self.password = password
-        self.head_url = 'https://images.nowcoder.com/head/' + str(random.randint(0, 1000)) + 'm.png'
+        # 注意这里的头像是不同于主要的大图的，是t.png
+        self.head_url = 'https://images.nowcoder.com/head/' + str(random.randint(0, 1000)) + 't.png'
 
     def __repr__(self):
         # 默认的输出方法
