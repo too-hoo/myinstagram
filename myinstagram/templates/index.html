@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}首页{% endblock %}
+<!--添加css样式表和一些参数-->
+{% block css%}/static/styles/pages/index.css{% endblock %}
+{% block content %}
+<div class="page-main clearfix">
+    {% for image in images: %}
+    <article class="mod">
+        <header class="mod-hd">
+            <time class="time">{{ image.created_date }}</time>
+            <a href="/profile/{{ image.user.id }}" class="avatar">
+                <img src="{{image.user.head_url}}">
+            </a>
+            <div class="profile-info">
+                <a title="{{image.user.username}}" href="/profile/{{image.user.id}}">{{image.user.username}}</a>
+            </div>
+        </header>
+        <div class="mod-bd">
+            <div class="img-box">
+                <a href="/image/{{image.id}}">
+                    <img src="{{image.url}}">
+                </a>
+            </div>
+        </div>
+        <div class="mod-ft">
+            <ul class="discuss-list">
+                <li class="more-discuss">
+                    <a> <!-- 注意评论长度的计算方法-->
+                        <span>全部 </span><span class="">{{image.comments|length}}</span>
+                        <span> 条评论</span></a>
+                </li>
+                {% for comment in image.comments: %}
+                {% if loop.index > 2 %}
+                    {% break %}
+                {% endif %}
+                <!--为了显示两条数据，如果是多的数据不会全部显示,这里使用break需要加入一个扩展！！，init中-->
+                <!--从Images开始找起，由Images得到user_id的，所以在Model里面不用反向引用，正向引用即可-->
+
+                <li>
+                    <!--<a class=" icon-remove" title="删除评论"></a>-->
+                    <a class="_4zhc5 _iqaka" title="zjuyxy" href="/profile/{{comment.user_id}}"
+                       data-reactid=".0.1.0.0.0.2.1.2:$comment-17856951190001917.1">{{comment.user.username}}</a>
+                    <span>
+                        <span>{{comment.content}}</span>
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
+            <section class="discuss-edit">
+                <a class="icon-heart"></a>
+                <form>
+                    <input placeholder="添加评论..." type="text">
+                </form>
+                <button class="more-info">更多选项</button>
+            </section>
+        </div>
+    </article>
+    {% endfor %}
+</div>
+{% endblock %}
