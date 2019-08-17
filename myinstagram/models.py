@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*-encoding:UTF-8-*-
 from datetime import datetime
-
-from myinstagram import db
+# 导入登录管理
+from myinstagram import db, login_manager
 import random
 
 
@@ -48,21 +48,46 @@ class Image(db.Model):
 
 
 class User(db.Model):
-    __tablename__ = 'user' # 设置数据库的表名，默认的是使用类的小写的
+    __tablename__ = 'user'  # 设置数据库的表名，默认的是使用类的小写的
 
     id = db.Column(db.INTEGER, primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), unique=True)
     password = db.Column(db.String(32))
-    head_url = db.Column(db.String(256)) # 这个是头像的信息
+    head_url = db.Column(db.String(256))  # 这个是头像的信息
+    salt = db.Column(db.String(32))
     # 这个人是和图片有关联的意思 ,想要知道一张照片对应的是那个用户使用反向引用
     images = db.relationship('Image', backref='user', lazy='dynamic')
 
-    def __init__(self, username, password):
+    def __init__(self, username, password, salt=''):
         self.username = username
         self.password = password
+        self.salt = salt
         # 注意这里的头像是不同于主要的大图的，是t.png
         self.head_url = 'https://images.nowcoder.com/head/' + str(random.randint(0, 1000)) + 't.png'
 
     def __repr__(self):
         # 默认的输出方法
         return '<User: %d %s>' % (self.id, self.username)
+
+    # Flask Login 接口
+    def is_authenticated(self):
+        print('is_authenticated')
+        return True
+
+    def is_active(self):
+        print('is_active')
+        return True
+
+    def is_anonymous(self):
+        print('is_anonymous')
+        return False
+
+    def get_id(self):
+        print('get_id')
+        return self.id
+
+
+# 登录管理者要先加载用户信息，判断用户的登录状态
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)

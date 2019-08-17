@@ -13,9 +13,14 @@
         <section>
             <header class="header">
                 <div class="header-cont">
-                    <a class="logo" href="/">logo</a>
+                    <a class="logo" href="/">首页</a>
                     <div class="web-menu">
-                        <a class="profile-ico">个人主页</a>
+                        {% if current_user.is_authenticated %}
+                            <a class="profile-ico" href="/profile/{{current_user.id}}"
+                               title="{current_user.username}}">{{current_user.username}}</a>
+                        {% else %}
+                        <a class="profile-ico" href="/regloginpage">注册/登录</a>
+                        {% endif %}
                     </div>
                 </div>
             </header>
@@ -92,4 +97,5 @@
         </section>
     </div>
 </body>
+{% block js %}{% endblock%}
 </html>

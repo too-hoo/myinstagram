@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}首页{% endblock %}
+{% block title %}首页-{{current_user.username}}{% endblock %}
 <!--添加css样式表和一些参数-->
 {% block css%}/static/styles/pages/index.css{% endblock %}
 {% block content %}
