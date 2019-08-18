@@ -3,7 +3,7 @@
 <!--添加css样式表和一些参数-->
 {% block css%}/static/styles/pages/index.css{% endblock %}
 {% block content %}
-<div class="page-main clearfix">
+<div class="page-main clearfix js-image-list">
     {% for image in images: %}
     <article class="mod">
         <header class="mod-hd">
@@ -36,26 +36,56 @@
                 {% endif %}
                 <!--为了显示两条数据，如果是多的数据不会全部显示,这里使用break需要加入一个扩展！！，init中-->
                 <!--从Images开始找起，由Images得到user_id的，所以在Model里面不用反向引用，正向引用即可-->
-
-                <li>
-                    <!--<a class=" icon-remove" title="删除评论"></a>-->
-                    <a class="_4zhc5 _iqaka" title="zjuyxy" href="/profile/{{comment.user_id}}"
-                       data-reactid=".0.1.0.0.0.2.1.2:$comment-17856951190001917.1">{{comment.user.username}}</a>
-                    <span>
-                        <span>{{comment.content}}</span>
-                    </span>
-                </li>
+                <ul class="discuss-list js-discuss-list">
+                    <li>
+                        <!--<a class=" icon-remove" title="删除评论"></a>-->
+                        <a class="_4zhc5 _iqaka" title="zjuyxy" href="/profile/{{comment.user_id}}"
+                           data-reactid=".0.1.0.0.0.2.1.2:$comment-17856951190001917.1">{{comment.user.username}}</a>
+                        <span>
+                            <span>{{comment.content}}</span>
+                        </span>
+                    </li>
+                </ul>
                 {% endfor %}
             </ul>
             <section class="discuss-edit">
                 <a class="icon-heart"></a>
                 <form>
-                    <input placeholder="添加评论..." type="text">
+                    <input placeholder="添加评论..." id="jsCmt" imageId = "imageId" type="text">
                 </form>
-                <button class="more-info">更多选项</button>
+                <button class="more-info" id="jsSubmit" >更多选项</button>
             </section>
         </div>
     </article>
     {% endfor %}
+    <style type="text/css">
+        .more-content {
+            margin: 50px auto 20px;
+            height: 120px;
+            width: 120px;
+            text-align: center;
+            line-height: 120px;
+            border-radius: 50%;
+            border: 2px solid #3897f0;
+        }
+        .more-content a {
+            color: #3897f0;
+            font-size: 14px;
+        }
+    </style>
+    {% if has_next %}
+    <div class="more-content js-load-more">
+        <a class="_oidfu" href="javascript:void(0);">更多</a>
+    </div>
+    {% endif %}
 </div>
-{% endblock %}
+{% endblock%}
+<!--注意需要在base.html中加上block js-->
+{% block js %}
+<script type="text/javascript">
+
+</script>
+<script type="text/javascript" src="/static/js/jquery.js"></script>
+<script type="text/javascript" src="/static/js/index.js"></script>
+<script type="text/javascript" src="/static/js/comment.js"></script>
+{% endblock%}

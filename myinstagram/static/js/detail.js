@@ -1,93 +1,62 @@
 $(function () {
     var oExports = {
         initialize: fInitialize,
-        // 渲染更多数据
-        renderMore: fRenderMore,
-        // 请求数据
-        requestData: fRequestData,
-        // 简单的模板替换
-        tpl: fTpl
+        encode: fEncode
     };
-    // 初始化页面脚本
     oExports.initialize();
 
     function fInitialize() {
         var that = this;
-        // 常用元素,这个元素需要在页面加上
-        that.listEl = $('div.js-image-list');
-        // 初始化数据
-        that.uid = window.uid;
-        that.page = 1;
-        that.pageSize = 3;
-        that.listHasNext = true;
-        // 绑定事件
-        $('.js-load-more').on('click', function (oEvent) {
-            var oEl = $(oEvent.currentTarget);
-            var sAttName = 'data-load';
-            // 正在请求数据中，忽略点击事件
-            if (oEl.attr(sAttName) === '1') {
+        var sImageId = window.imageId;
+        var oCmtIpt = $('#jsCmt');
+        var oListDv = $('ul.js-discuss-list');
+
+        // 点击添加评论
+        var bSubmit = false;
+        $('#jsSubmit').on('click', function () {
+            var sCmt = $.trim(oCmtIpt.val());
+            // 评论为空不能提交
+            if (!sCmt) {
+                return alert('评论不能为空');
+            }
+            // 上一个提交没结束之前，不再提交新的评论
+            if (bSubmit) {
                 return;
             }
-            // 增加标记，避免请求过程中的频繁点击
-            oEl.attr(sAttName, '1');
-            that.renderMore(function () {
-                // 取消点击标记位，可以进行下一次加载
-                oEl.removeAttr(sAttName);
-                // 没有数据隐藏加载更多按钮
-                !that.listHasNext && oEl.hide();
+            bSubmit = true;
+            $.ajax({
+                url: '/addcomment/',
+                type: 'post',
+                dataType: 'json',
+                data: {image_id: sImageId, content: sCmt}
+            }).done(function (oResult) {
+                if (oResult.code !== 0) {
+                    return alert(oResult.msg || '提交失败，请重试');
+                }
+                // 清空输入框
+                oCmtIpt.val('');
+                // 渲染新的评论
+                var sHtml = [
+                    '<li>',
+                        '<a class="_4zhc5 _iqaka" title="', that.encode(oResult.username), '" href="/profile/', oResult.user_id, '">', that.encode(oResult.username), '</a> ',
+                        '<span><span>', that.encode(sCmt), '</span></span>',
+                    '</li>'].join('');
+                oListDv.prepend(sHtml);
+            }).fail(function (oResult) {
+                alert(oResult.msg || '提交失败，请重试');
+            }).always(function () {
+                bSubmit = false;
             });
         });
     }
 
-    function fRenderMore(fCb) {
-        var that = this;
-        // 没有更多数据，不处理
-        if (!that.listHasNext) {
-            return;
+    function fEncode(sStr, bDecode) {
+        var aReplace =["&#39;", "'", "&quot;", '"', "&nbsp;", " ", "&gt;", ">", "&lt;", "<", "&amp;", "&", "&yen;", "¥"];
+        !bDecode && aReplace.reverse();
+        for (var i = 0, l = aReplace.length; i < l; i += 2) {
+             sStr = sStr.replace(new RegExp(aReplace[i],'g'), aReplace[i+1]);
         }
-        that.requestData({
-            uid: that.uid,
-            page: that.page + 1,
-            pageSize: that.pageSize,
-            call: function (oResult) {
-                // 是否有更多数据
-                that.listHasNext = !!oResult.has_next && (oResult.images || []).length > 0;
-                // 更新当前页面
-                that.page++;
-                // 渲染数据
-                var sHtml = '';
-                $.each(oResult.images, function (nIndex, oImage) {
-                    sHtml += that.tpl([
-                        '<a class="item" href="/image/#{id}">',
-                            '<div class="img-box">',
-                                '<img src="#{url}">',
-                            '</div>',
-                            '<div class="img-mask"></div>',
-                            '<div class="interaction-wrap">',
-                                '<div class="interaction-item"><i class="icon-comment"></i>#{comment_count}</div>',
-                            '</div>',
-                        '</a>'].join(''), oImage);
-                });
-                sHtml && that.listEl.append(sHtml);
-            },
-            error: function () {
-                alert('出现错误，请稍后重试');
-            },
-            always: fCb
-        });
-    }
+        return sStr;
+    };
 
-    function fRequestData(oConf) {
-        var that = this;
-        var sUrl = '/profile/images/' + oConf.uid + '/' + oConf.page + '/' + oConf.pageSize + '/';
-        $.ajax({url: sUrl, dataType: 'json'}).done(oConf.call).fail(oConf.error).always(oConf.always);
-    }
-
-    function fTpl(sTpl, oData) {
-        var that = this;
-        sTpl = $.trim(sTpl);
-        return sTpl.replace(/#{(.*?)}/g, function (sStr, sName) {
-            return oData[sName] === undefined || oData[sName] === null ? '' : oData[sName];
-        });
-    }
 });

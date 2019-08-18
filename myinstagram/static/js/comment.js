@@ -7,7 +7,8 @@ $(function () {
 
     function fInitialize() {
         var that = this;
-        var sImageId = window.imageId;
+        // var sImageId = window.imageId;
+        var sImageId = $('#imageId1');
         var oCmtIpt = $('#jsCmt');
         var oListDv = $('ul.js-discuss-list');
 
@@ -38,8 +39,11 @@ $(function () {
                 // 渲染新的评论
                 var sHtml = [
                     '<li>',
-                        '<a class="_4zhc5 _iqaka" title="', that.encode(oResult.username), '" href="/profile/', oResult.user_id, '">', that.encode(oResult.username), '</a> ',
-                        '<span><span>', that.encode(sCmt), '</span></span>',
+                        '<a class="_4zhc5 _iqaka" title="', that.encode(oResult.username),'" href="/profile/', oResult.user_id, '"',
+                           'data-reactid=".0.1.0.0.0.2.1.2:$comment-17856951190001917.1">', that.encode(oResult.username), '</a>',
+                        '<span>',
+                            '<span>{{comment.content}}</span>',
+                        '</span>',
                     '</li>'].join('');
                 oListDv.prepend(sHtml);
             }).fail(function (oResult) {

@@ -11,12 +11,19 @@
             </div>
             <div class="profile-content">
                 <div class="profile-info-main" data-reactid=".0.1.0.0:0.1.0">
-                    <h1 class="name" title="taylorswift">{{user.username}}</h1>
+                    <h1 class="name" title="{{user.username}}">{{user.username}}</h1>
                     <span class="verified" title="已验证">已验证</span>
-                    <span class="_jxp6f _e616g">
-                        <button class="btn-success">上传图片</button>
+                    <!--图片上传功能-->
+                    {% if user.id == current_user.id %}
+                    <span class="_jxp6f _e616g" style="display: inline-block; position: relative;">
+                        <form method="post" action="/upload/" enctype="multipart/form-data">
+                            <button class="btn-success">上传图片</button>
+                            <input name="file" type="file" onchange="this.parentNode.submit()"
+                            style="opacity: 0;position: absolute;top:0;left: 0;display: block;width: 100%;height: 100%;">
+                        </form>
                     </span>
                     <button class="more-info">选项</button>
+                    {% endif%}
                 </div>
                 <!--
                 <div class="profile-info-sub">
@@ -58,7 +65,7 @@
             </div>
             {% if has_next %}
             <div class="more-content js-load-more">
-                <a class="_oidfu" href="javascript:void(0);">{{user.id}}更多</a>
+                <a class="_oidfu" href="javascript:void(0);">更多</a>
             </div>
             {% endif %}
         </div>

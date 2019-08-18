@@ -1,4 +1,6 @@
 $(function () {
+    // 初始化数据，相当于一个类.
+    // 这个类还不会该，就是不会更改为js动态加载的形式，谨慎参考
     var oExports = {
         initialize: fInitialize,
         // 渲染更多数据
@@ -16,9 +18,8 @@ $(function () {
         // 常用元素,这个元素需要在页面加上
         that.listEl = $('div.js-image-list');
         // 初始化数据
-        that.uid = window.uid;
         that.page = 1;
-        that.pageSize = 3;
+        that.pageSize = 10;
         that.listHasNext = true;
         // 绑定事件
         $('.js-load-more').on('click', function (oEvent) {
@@ -58,15 +59,47 @@ $(function () {
                 var sHtml = '';
                 $.each(oResult.images, function (nIndex, oImage) {
                     sHtml += that.tpl([
-                        '<a class="item" href="/image/#{id}">',
-                            '<div class="img-box">',
-                                '<img src="#{url}">',
+                        '<article class="mod">',
+                            '<header class="mod-hd">',
+                                '<time class="time">#{ created_date }</time>',
+                                '<a href="/profile/#{ user.id }" class="avatar">',
+                                    '<img src="#{ user.head_url }">',
+                                '</a>',
+                                '<div class="profile-info">',
+                                    '<a title="#{ user.username }" href="/profile/#{ user.id }">#{user.username}</a>',
+                                '</div>',
+                            '</header>',
+                            '<div class="mod-bd">',
+                                '<div class="img-box">',
+                                    '<a href="/image/#{id}">',
+                                        '<img src="#{url}">',
+                                    '</a>',
+                                '</div>',
                             '</div>',
-                            '<div class="img-mask"></div>',
-                            '<div class="interaction-wrap">',
-                                '<div class="interaction-item"><i class="icon-comment"></i>#{comment_count}</div>',
+                            '<div class="mod-ft">',
+                                '<ul class="discuss-list">',
+                                    '<li class="more-discuss">',
+                                        '<a> <!-- 注意评论长度的计算方法-->',
+                                            '<span>全部 </span><span class="">#{comment_count}</span>',
+                                            '<span> 条评论</span></a>',
+                                    '</li>',
+                                    '<li>',
+                                        '<!--<a class=" icon-remove" title="删除评论"></a>-->',
+                                        '<a class="_4zhc5 _iqaka" title="zjuyxy" href="/profile/#{comments}" data-reactid=".0.1.0.0.0.2.1.2:$comment-17856951190001917.1">#{comments}</a>',
+                                        '<span>',
+                                            '<span>#{comment.content}</span>',
+                                        '</span>',
+                                    '</li>',
+                                '</ul>',
+                                '<section class="discuss-edit">',
+                                    '<a class="icon-heart"></a>',
+                                    '<form>',
+                                        '<input placeholder="添加评论..." type="text">',
+                                    '</form>',
+                                    '<button class="more-info">提交</button>',
+                                '</section>',
                             '</div>',
-                        '</a>'].join(''), oImage);
+                        '</article>'].join(''), oImage);
                 });
                 sHtml && that.listEl.append(sHtml);
             },
@@ -79,7 +112,7 @@ $(function () {
 
     function fRequestData(oConf) {
         var that = this;
-        var sUrl = '/profile/images/' + oConf.uid + '/' + oConf.page + '/' + oConf.pageSize + '/';
+        var sUrl = '/index/images/' + oConf.page + '/' + oConf.pageSize + '/';
         $.ajax({url: sUrl, dataType: 'json'}).done(oConf.call).fail(oConf.error).always(oConf.always);
     }
 

@@ -2,6 +2,7 @@
 # -*-encoding:UTF-8-*-
 # 脚本数据文件
 import random
+import unittest
 
 from myinstagram import app
 from flask_script import Manager
@@ -13,6 +14,16 @@ from sqlalchemy import or_, and_, not_
 
 manager = Manager(app)
 
+@manager.command
+def run_test():
+    # 注意在跑测试之前先要将数据库清空之后再创建一个新的
+    db.drop_all()
+    db.create_all()
+    # 默认是会自己去寻找当前的目录下面的test.py文件
+    tests = unittest.TestLoader().discover('./')
+    # 找到之后就可以跑单元测试
+    unittest.TextTestRunner().run(tests)
+    pass
 
 def get_image_url():
     """

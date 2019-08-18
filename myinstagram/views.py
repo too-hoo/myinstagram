@@ -1,24 +1,57 @@
 #!/usr/bin/env python3
 # -*-encoding:UTF-8-*-
 import hashlib
+import os
 import random
 import json
+import uuid
 
 from myinstagram import app, db
-from flask import render_template, redirect, request, flash, get_flashed_messages
+from flask import render_template, redirect, request, flash, get_flashed_messages, send_from_directory
 
 from myinstagram.models import Image, User, Comment
 # 导入flask-login主要方法
 from flask_login import login_user, logout_user, current_user, login_required
 
+# 导入七牛的上传的方法
+from myinstagram.qiniusdk import qiniu_upload_file
+
+# 默认是使用get请求的
+@app.route('/index/images/<int:page>/<int:per_page>/')
+def index_image(page, per_page):
+    paginate = Image.query.order_by(db.desc(Image.id)).paginate(page=page, per_page=per_page, error_out=False)
+    map = {'has_next':paginate.has_next}
+    images = []
+    for image in paginate.items:
+        comments = []
+        # 限定首页的评论数为最小的2条
+        for i in range(0, min(2, len(image.comments))):
+            comment = image.comments[i]
+            comments.append({'username':comment.user.username,
+                             'user_id':comment.user_id,
+                             'content':comment.content})
+        # 首页的每一个块可以看做是一个对象，将每一个对象拼接在一起，返回
+        imgvo = {'id':image.id,
+                 'url':image.url,
+                 'comment_count':len(image.comments),
+                 'user_id':image.user_id,
+                 'head_url':image.user.head_url,
+                 'created_date':str(image.created_date),
+                 'commemts':comments}
+        images.append(imgvo)
+
+    map['images'] = images
+    # 将把python的类型转化成为json字符串，返回
+    return json.dumps(map)
 
 @app.route('/')
 def index():
-    images = Image.query.order_by(db.desc(Image.id)).limit(10).all()
+    images = Image.query.order_by(db.desc(Image.id)).paginate(page=1, per_page=10, error_out=False)
     # 另外的两种写法
     # images = Image.query.order_by('-id').limit(10).all()
     # images = Image.query.order_by('id desc').limit(10).all()
-    return render_template('index.html', images=images)
+    print(images.has_next)
+    return render_template('index.html',has_next=images.has_next,  images=images.items)
 
 
 @app.route('/image/<int:image_id>')
@@ -36,21 +69,22 @@ def profile(user_id):
     user = User.query.get(user_id)
     if user == None:
         return redirect('/')
-    paginate = Image.query.filter_by(user_id = user_id).paginate(page=1, per_page=3) # 一次加载3张图片
+    paginate = Image.query.filter_by(user_id=user_id).paginate(page=1, per_page=3)  # 一次加载3张图片
     # has_next = paginate.has_next返回给页面作为判断是否有下一页
     # print(paginate.has_next)
     return render_template('profile.html', user=user, has_next=paginate.has_next, images=paginate.items)
 
+
 @app.route('/profile/images/<int:user_id>/<int:page>/<int:per_page>/')
 def user_images(user_id, page, per_page):
     # 参数检查
-    paginate = Image.query.filter_by(user_id = user_id).paginate(page=page, per_page=per_page)
+    paginate = Image.query.filter_by(user_id=user_id).paginate(page=page, per_page=per_page)
 
     # paginate的属性判断是否存在下一页,每页显示数量遍历出来，接在尾部
-    map = {'has_next':paginate.has_next}
+    map = {'has_next': paginate.has_next}
     images = []
     for image in paginate.items:
-        imgvo = {'id':image.id, 'url':image.url, 'comment_count': len(image.comments)}
+        imgvo = {'id': image.id, 'url': image.url, 'comment_count': len(image.comments)}
         images.append(imgvo)
     map['images'] = images
     return json.dumps(map)
@@ -106,6 +140,7 @@ def login():
 
     return redirect('/')
 
+
 @app.route('/reg', methods={'post', 'get'})
 def reg():
     # request arg
@@ -144,3 +179,69 @@ def reg():
 def logout():
     logout_user()
     return redirect('/')
+
+
+@app.route('/image/<image_name>')
+def view_image(image_name):
+    # 查看上传的图片，flask已经将图片封装好了直接使用send_from_directory就可以了
+    return send_from_directory(app.config['UPLOAD_DIR'], image_name)
+
+
+# 下面的是两种方式的查看图片的方法
+def save_to_qiniu(file, file_name):
+    return qiniu_upload_file(file, file_name)
+
+
+def save_to_local(file, file_name):
+    save_dir = app.config['UPLOAD_DIR']
+    file.save(os.path.join(save_dir, file_name))
+    return '/image/' + file_name
+
+
+@app.route('/upload/', methods={"post"})  # 图片上传使用的方法都是使用post方法的
+@login_required  # 需要登录之后才能上传照片
+def upload():
+    # print(type(request.files)) # ImmutableMultiDict包含的是所有上传文件的一些基本信息
+    file = request.files['file']  # http请求是可以通过多文件上传的
+    # dir(file) # 可以使用这个函数对文件的一些方法进行列举
+    # https://werkzeug-docs-cn.readthedocs.io/zh_CN/latest/
+    # 需要对文件进行裁剪等操作
+    file_ext = ''
+    if file.filename.find('.') > 0:
+        # 截取上传的图片的后缀名rsplit找右侧的第一个.，设置成为新图片的后缀名
+        file_ext = file.filename.rsplit('.', 1)[1].strip().lower()
+    if file_ext in app.config['ALLOWED_EXT']:
+        file_name = str(uuid.uuid1()).replace('-', '') + '.' + file_ext
+        # print(file_name)
+        # 保存到本地
+        url = save_to_local(file, file_name)
+        # url = qiniu_upload_file(file, file_name)
+        if url != None:
+            # 如果URL不空，保存链接地址和当前用户的id
+            db.session.add(Image(url, current_user.id))
+            db.session.commit()
+    return redirect('/profile/%d' % current_user.id)
+
+
+@app.route('/addcomment/', methods={'post'})
+def add_comment():
+    image_id = int(request.values['image_id'])
+    content = request.values['content'].strip()
+    comment = Comment(content, image_id, current_user.id)
+    db.session.add(comment)
+    db.session.commit()
+    return json.dumps({"code":0, "id":comment.id,
+                       "content":content,
+                       "username":comment.user.username,
+                       "user_id":comment.user.id})
+
+
+
+
+
+
+
+
+
+
+
